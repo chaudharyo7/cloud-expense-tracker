@@ -1,0 +1,8 @@
+# Example Terraform variables template
+# Copy this file to terraform.tfvars and fill in your values.
+# DO NOT commit terraform.tfvars to version control.
+
+region         = "ap-south-1"
+project_suffix = "yd2026"
+db_username    = "expense_user"
+db_password    = "YourSecurePasswordHere123!"
