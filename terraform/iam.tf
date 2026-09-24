@@ -1,4 +1,7 @@
 
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
 resource "aws_iam_role" "ec2_ssm_role" {
   name = "expense-ec2-ssm-role"
 
@@ -47,7 +50,7 @@ resource "aws_iam_policy" "ec2_db_credential_read_policy" {
         Action = [
           "ssm:GetParameter"
         ]
-        Resource = "arn:aws:ssm:ap-south-1:205639151266:parameter/expense-tracker/db/password"
+        Resource = "arn:aws:ssm:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:parameter/expense-tracker/db/password"
       },
       {
         Sid    = "DecryptSecureStringWithKMS"
@@ -58,8 +61,8 @@ resource "aws_iam_policy" "ec2_db_credential_read_policy" {
         Resource = "*"
         Condition = {
           StringEquals = {
-            "kms:CallerAccount" = "205639151266"
-            "kms:ViaService"    = "ssm.ap-south-1.amazonaws.com"
+            "kms:CallerAccount" = data.aws_caller_identity.current.account_id
+            "kms:ViaService"    = "ssm.${data.aws_region.current.region}.amazonaws.com"
           }
         }
       }
@@ -199,7 +202,7 @@ resource "aws_iam_role" "github_actions_ecr_role" {
         Condition = {
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-            "token.actions.githubusercontent.com:sub" = "repo:chaudharyo7@120274838/cloud-expense-tracker@1383946991:ref:refs/heads/main"
+            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository}:ref:refs/heads/main"
           }
         }
       }
@@ -265,17 +268,28 @@ resource "aws_iam_policy" "github_actions_ssm_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "SSMSendCommandInstancesAndDoc"
+        Sid    = "SSMSendCommandOnTaggedInstances"
         Effect = "Allow"
         Action = [
           "ssm:SendCommand"
         ]
         Resource = [
-          aws_instance.frontend_1.arn,
-          aws_instance.frontend_2.arn,
-          aws_instance.backend_1.arn,
-          aws_instance.backend_2.arn,
-          "arn:aws:ssm:ap-south-1::document/AWS-RunShellScript"
+          "arn:aws:ec2:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:instance/*"
+        ]
+        Condition = {
+          StringEquals = {
+            "ssm:resourceTag/Role" = ["frontend", "backend"]
+          }
+        }
+      },
+      {
+        Sid    = "SSMSendCommandDocument"
+        Effect = "Allow"
+        Action = [
+          "ssm:SendCommand"
+        ]
+        Resource = [
+          "arn:aws:ssm:${data.aws_region.current.region}::document/AWS-RunShellScript"
         ]
       },
       {
@@ -286,6 +300,14 @@ resource "aws_iam_policy" "github_actions_ssm_policy" {
           "ssm:ListCommandInvocations",
           "ssm:ListCommands",
           "ssm:DescribeInstanceInformation"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "RDSDescribeEndpoint"
+        Effect = "Allow"
+        Action = [
+          "rds:DescribeDBInstances"
         ]
         Resource = "*"
       }

@@ -91,6 +91,7 @@ resource "aws_instance" "frontend_1" {
   subnet_id              = aws_subnet.public_1.id
   tags = {
     Name = "expense-tracker-frontend-1"
+    Role = "frontend"
   }
 }
 
@@ -102,6 +103,7 @@ resource "aws_instance" "frontend_2" {
   subnet_id              = aws_subnet.public_2.id
   tags = {
     Name = "expense-tracker-frontend-2"
+    Role = "frontend"
   }
 }
 
@@ -114,6 +116,7 @@ resource "aws_instance" "backend_1" {
   vpc_security_group_ids = [aws_security_group.app_sg.id]
   tags = {
     Name = "expense-tracker-backend-1"
+    Role = "backend"
   }
 }
 
@@ -126,5 +129,6 @@ resource "aws_instance" "backend_2" {
 
   tags = {
     Name = "expense-tracker-backend-2"
+    Role = "backend"
   }
 }

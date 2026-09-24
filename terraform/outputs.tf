@@ -147,6 +147,11 @@ output "GITHUB_ACTIONS_ROLE_ARN" {
   description = "ARN of the IAM role for GitHub Actions OIDC to push images to ECR"
 }
 
+output "github_actions_role_arn" {
+  description = "IAM role ARN assumed by GitHub Actions through OIDC"
+  value       = aws_iam_role.github_actions_ecr_role.arn
+}
+
 output "ECR_FRONTEND_REPOSITORY_URL" {
   value       = aws_ecr_repository.frontend.repository_url
   description = "URL of the frontend ECR repository"

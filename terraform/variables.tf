@@ -22,3 +22,9 @@ variable "project_suffix" {
   type    = string
   default = "yd2026"
 }
+
+variable "github_repository" {
+  description = "GitHub repository in owner/repository format"
+  type        = string
+  default     = "chaudharyo7/cloud-expense-tracker"
+}
