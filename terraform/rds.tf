@@ -11,6 +11,7 @@ resource "aws_db_subnet_group" "expense_db_subnet_group" {
   }
 }
 resource "aws_db_instance" "expense_db_instance" {
+  identifier     = "expense-tracker-db"
   db_name        = "expense_db"
   username       = var.db_username
   password       = var.db_password

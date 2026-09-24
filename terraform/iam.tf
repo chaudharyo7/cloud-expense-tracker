@@ -24,6 +24,11 @@ resource "aws_iam_role_policy_attachment" "ec2_ssm_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
 }
 
+resource "aws_iam_role_policy_attachment" "ec2_ecr_read_only" {
+  role       = aws_iam_role.ec2_ssm_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
 resource "aws_iam_instance_profile" "ec2_ssm_profile" {
   name = "expense-ec2-ssm-profile"
   role = aws_iam_role.ec2_ssm_role.name
@@ -118,3 +123,94 @@ resource "aws_iam_user_policy_attachment" "ansible_ec2_inventory_attachment" {
   user       = "Terraform-User"
   policy_arn = aws_iam_policy.ansible_ec2_inventory_policy.arn
 }
+
+# ==========================================
+# GitHub Actions OIDC & ECR Deployment Role
+# ==========================================
+
+resource "aws_iam_openid_connect_provider" "github_actions" {
+  url            = "https://token.actions.githubusercontent.com"
+  client_id_list = ["sts.amazonaws.com"]
+  thumbprint_list = [
+    "6938fd4d98bab03faadb97b34396831e3780aea1",
+    "1c5824a6f5a877527f413b40f6d773a15d64acb4"
+  ]
+
+  tags = {
+    Name = "github-actions-oidc-provider"
+  }
+}
+
+resource "aws_iam_role" "github_actions_ecr_role" {
+  name = "expense-github-actions-ecr-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = {
+          Federated = aws_iam_openid_connect_provider.github_actions.arn
+        }
+        Action = "sts:AssumeRoleWithWebIdentity"
+        Condition = {
+          StringEquals = {
+            "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+            "token.actions.githubusercontent.com:sub" = "repo:chaudharyo7/cloud-expense-tracker:ref:refs/heads/main"
+          }
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name = "expense-github-actions-ecr-role"
+  }
+}
+
+resource "aws_iam_policy" "github_actions_ecr_policy" {
+  name        = "expense-github-actions-ecr-policy"
+  description = "Allows GitHub Actions to authenticate and push Docker images to frontend and backend ECR repositories"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ECRAuth"
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ECRPushPullRepoScoped"
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
+          "ecr:DescribeRepositories"
+        ]
+        Resource = [
+          aws_ecr_repository.frontend.arn,
+          aws_ecr_repository.backend.arn
+        ]
+      }
+    ]
+  })
+
+  tags = {
+    Name = "expense-github-actions-ecr-policy"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "github_actions_ecr_attachment" {
+  role       = aws_iam_role.github_actions_ecr_role.name
+  policy_arn = aws_iam_policy.github_actions_ecr_policy.arn
+}
+

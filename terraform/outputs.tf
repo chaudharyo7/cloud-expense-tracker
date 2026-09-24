@@ -141,3 +141,19 @@ output "EXPENSE_LOGS_BUCKET_NAME" {
   description = "The name of the S3 access logs bucket"
 
 }
+
+output "GITHUB_ACTIONS_ROLE_ARN" {
+  value       = aws_iam_role.github_actions_ecr_role.arn
+  description = "ARN of the IAM role for GitHub Actions OIDC to push images to ECR"
+}
+
+output "ECR_FRONTEND_REPOSITORY_URL" {
+  value       = aws_ecr_repository.frontend.repository_url
+  description = "URL of the frontend ECR repository"
+}
+
+output "ECR_BACKEND_REPOSITORY_URL" {
+  value       = aws_ecr_repository.backend.repository_url
+  description = "URL of the backend ECR repository"
+}
+
