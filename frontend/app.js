@@ -142,3 +142,80 @@ function escapeHtml(value) {
 
 checkHealth();
 loadExpenses();
+
+// --- AWS Infrastructure & Dynamic ALB DNS Resolution ---
+async function resolveAlbDns() {
+  const hostnameEl = document.getElementById("alb-hostname");
+  const ipsEl = document.getElementById("alb-ips");
+  const lastCheckedEl = document.getElementById("infra-last-checked");
+
+  const hostname = window.location.hostname || "localhost";
+  if (hostnameEl) {
+    hostnameEl.textContent = hostname;
+  }
+
+  // Gracefully handle local development environments
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.endsWith(".local")
+  ) {
+    if (ipsEl) {
+      ipsEl.innerHTML =
+        '<span class="ip-pill muted">Local environment (no public ALB DNS)</span>';
+    }
+    if (lastCheckedEl) {
+      lastCheckedEl.textContent = new Date().toLocaleTimeString();
+    }
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `https://dns.google/resolve?name=${encodeURIComponent(hostname)}&type=A`
+    );
+    if (!response.ok) {
+      throw new Error(`DNS resolver status: ${response.status}`);
+    }
+    const data = await response.json();
+
+    const aRecords = (data.Answer || [])
+      .filter((record) => record.type === 1 && record.data)
+      .map((record) => record.data);
+
+    if (ipsEl) {
+      if (aRecords.length > 0) {
+        ipsEl.innerHTML = aRecords
+          .map((ip) => `<span class="ip-pill">${escapeHtml(ip)}</span>`)
+          .join(" ");
+      } else {
+        ipsEl.innerHTML =
+          '<span class="ip-pill warning">Unable to resolve ALB IPs</span>';
+      }
+    }
+
+    if (lastCheckedEl) {
+      lastCheckedEl.textContent = new Date().toLocaleTimeString();
+    }
+  } catch (error) {
+    console.warn("ALB DNS resolution error:", error);
+    if (ipsEl) {
+      ipsEl.innerHTML =
+        '<span class="ip-pill warning">Unable to resolve ALB IPs</span>';
+    }
+    if (lastCheckedEl) {
+      lastCheckedEl.textContent = `${new Date().toLocaleTimeString()} (failed)`;
+    }
+  }
+}
+
+const infraRefreshBtn = document.getElementById("infra-refresh");
+if (infraRefreshBtn) {
+  infraRefreshBtn.addEventListener("click", () => {
+    resolveAlbDns();
+  });
+}
+
+resolveAlbDns();
+setInterval(resolveAlbDns, 30000);
+

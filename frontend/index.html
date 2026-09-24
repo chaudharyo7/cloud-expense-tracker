@@ -17,6 +17,38 @@
       <div id="health" class="status">Checking API...</div>
     </header>
 
+    <section class="card infra-card">
+      <div class="section-heading">
+        <div class="infra-title-wrap">
+          <span class="badge-live">Live AWS</span>
+          <h2>AWS Infrastructure</h2>
+        </div>
+        <button id="infra-refresh" class="small secondary-btn" type="button">Refresh</button>
+      </div>
+
+      <div class="infra-grid">
+        <div class="infra-item">
+          <span class="infra-label">ALB DNS</span>
+          <div class="infra-value-wrap">
+            <code id="alb-hostname" class="infra-code">Detecting...</code>
+          </div>
+        </div>
+
+        <div class="infra-item">
+          <span class="infra-label">ALB Resolved Public IPs</span>
+          <div id="alb-ips" class="ip-list">
+            <span class="ip-pill">Resolving...</span>
+          </div>
+          <p class="infra-note">ALB IPs are AWS-managed and may change. Always use the ALB DNS name.</p>
+        </div>
+
+        <div class="infra-item infra-meta">
+          <span class="infra-label">Last Checked</span>
+          <span id="infra-last-checked" class="infra-time">—</span>
+        </div>
+      </div>
+    </section>
+
     <section class="grid">
       <div class="card">
         <h2>Add Expense</h2>
