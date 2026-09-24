@@ -1,5 +1,7 @@
+import os
 from datetime import date
 
+import boto3
 from flask import Blueprint, jsonify, request
 
 from .db import get_connection
@@ -10,6 +12,38 @@ api = Blueprint("api", __name__)
 @api.get("/health")
 def health():
     return jsonify({"status": "ok", "service": "expense-api"})
+
+
+@api.get("/infrastructure")
+def get_infrastructure():
+    region = os.getenv("AWS_REGION", "ap-south-1")
+    try:
+        ec2 = boto3.client("ec2", region_name=region)
+        response = ec2.describe_instances(
+            Filters=[
+                {"Name": "tag:Role", "Values": ["frontend"]},
+                {"Name": "instance-state-name", "Values": ["running", "pending"]},
+            ]
+        )
+
+        instances = []
+        for reservation in response.get("Reservations", []):
+            for inst in reservation.get("Instances", []):
+                instances.append({
+                    "instance_id": inst.get("InstanceId"),
+                    "public_ip": inst.get("PublicIpAddress"),
+                })
+
+        return jsonify({
+            "frontend_instances": instances,
+            "region": region,
+        })
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "frontend_instances": [],
+            "region": region,
+        }), 500
 
 
 @api.get("/expenses")

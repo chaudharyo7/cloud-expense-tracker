@@ -143,10 +143,10 @@ function escapeHtml(value) {
 checkHealth();
 loadExpenses();
 
-// --- AWS Infrastructure & Dynamic ALB DNS Resolution ---
-async function resolveAlbDns() {
+// --- AWS Infrastructure: ALB DNS & Frontend EC2 Public IPs ---
+async function loadInfrastructure() {
   const hostnameEl = document.getElementById("alb-hostname");
-  const ipsEl = document.getElementById("alb-ips");
+  const ipsEl = document.getElementById("frontend-ips");
   const lastCheckedEl = document.getElementById("infra-last-checked");
 
   const hostname = window.location.hostname || "localhost";
@@ -154,43 +154,26 @@ async function resolveAlbDns() {
     hostnameEl.textContent = hostname;
   }
 
-  // Gracefully handle local development environments
-  if (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname.endsWith(".local")
-  ) {
-    if (ipsEl) {
-      ipsEl.innerHTML =
-        '<span class="ip-pill muted">Local environment (no public ALB DNS)</span>';
-    }
-    if (lastCheckedEl) {
-      lastCheckedEl.textContent = new Date().toLocaleTimeString();
-    }
-    return;
-  }
-
   try {
-    const response = await fetch(
-      `https://dns.google/resolve?name=${encodeURIComponent(hostname)}&type=A`
-    );
+    const response = await fetch(`${API_BASE}/infrastructure`);
     if (!response.ok) {
-      throw new Error(`DNS resolver status: ${response.status}`);
+      throw new Error(`API responded with status: ${response.status}`);
     }
     const data = await response.json();
-
-    const aRecords = (data.Answer || [])
-      .filter((record) => record.type === 1 && record.data)
-      .map((record) => record.data);
+    const instances = data.frontend_instances || [];
 
     if (ipsEl) {
-      if (aRecords.length > 0) {
-        ipsEl.innerHTML = aRecords
-          .map((ip) => `<span class="ip-pill">${escapeHtml(ip)}</span>`)
+      if (instances.length > 0) {
+        ipsEl.innerHTML = instances
+          .map((inst) => {
+            const ip = inst.public_ip || "No Public IP";
+            const id = inst.instance_id ? ` (${inst.instance_id})` : "";
+            return `<span class="ip-pill">${escapeHtml(ip)}${escapeHtml(id)}</span>`;
+          })
           .join(" ");
       } else {
         ipsEl.innerHTML =
-          '<span class="ip-pill warning">Unable to resolve ALB IPs</span>';
+          '<span class="ip-pill warning">No active frontend instances found</span>';
       }
     }
 
@@ -198,10 +181,10 @@ async function resolveAlbDns() {
       lastCheckedEl.textContent = new Date().toLocaleTimeString();
     }
   } catch (error) {
-    console.warn("ALB DNS resolution error:", error);
+    console.warn("Infrastructure fetch error:", error);
     if (ipsEl) {
       ipsEl.innerHTML =
-        '<span class="ip-pill warning">Unable to resolve ALB IPs</span>';
+        '<span class="ip-pill warning">Unable to fetch EC2 Public IPs</span>';
     }
     if (lastCheckedEl) {
       lastCheckedEl.textContent = `${new Date().toLocaleTimeString()} (failed)`;
@@ -212,10 +195,10 @@ async function resolveAlbDns() {
 const infraRefreshBtn = document.getElementById("infra-refresh");
 if (infraRefreshBtn) {
   infraRefreshBtn.addEventListener("click", () => {
-    resolveAlbDns();
+    loadInfrastructure();
   });
 }
 
-resolveAlbDns();
-setInterval(resolveAlbDns, 30000);
+loadInfrastructure();
+setInterval(loadInfrastructure, 30000);
 

@@ -79,6 +79,34 @@ resource "aws_iam_role_policy_attachment" "ec2_db_credential_read_attachment" {
   policy_arn = aws_iam_policy.ec2_db_credential_read_policy.arn
 }
 
+resource "aws_iam_policy" "ec2_describe_instances_policy" {
+  name        = "expense-ec2-describe-instances-policy"
+  description = "Allows backend EC2 instances to discover frontend EC2 instances and public IPs"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "EC2DescribeInstances"
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeInstances"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "expense-ec2-describe-instances-policy"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_describe_instances_attachment" {
+  role       = aws_iam_role.ec2_ssm_role.name
+  policy_arn = aws_iam_policy.ec2_describe_instances_policy.arn
+}
+
 
 resource "aws_iam_policy" "ansible_ssm_s3_policy" {
   name = "expense-ansible-ssm-s3-policy"
@@ -202,7 +230,7 @@ resource "aws_iam_role" "github_actions_ecr_role" {
         Condition = {
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-            "token.actions.githubusercontent.com:sub" = "repo:${var.github_repository}:ref:refs/heads/main"
+            "token.actions.githubusercontent.com:sub" = "repo:chaudharyo7@120274838/cloud-expense-tracker@1383946991:ref:refs/heads/main"
           }
         }
       }
