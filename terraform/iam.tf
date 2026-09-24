@@ -156,7 +156,7 @@ resource "aws_iam_role" "github_actions_ecr_role" {
         Condition = {
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-            "token.actions.githubusercontent.com:sub" = "repo:chaudharyo7/cloud-expense-tracker:ref:refs/heads/main"
+            "token.actions.githubusercontent.com:sub" = "repo:chaudharyo7@120274838/cloud-expense-tracker@1383946991:ref:refs/heads/main"
           }
         }
       }
@@ -213,4 +213,50 @@ resource "aws_iam_role_policy_attachment" "github_actions_ecr_attachment" {
   role       = aws_iam_role.github_actions_ecr_role.name
   policy_arn = aws_iam_policy.github_actions_ecr_policy.arn
 }
+
+resource "aws_iam_policy" "github_actions_ssm_policy" {
+  name        = "expense-github-actions-ssm-deployment-policy"
+  description = "Allows GitHub Actions to trigger deployments on frontend and backend EC2 instances via SSM"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SSMSendCommandInstancesAndDoc"
+        Effect = "Allow"
+        Action = [
+          "ssm:SendCommand"
+        ]
+        Resource = [
+          aws_instance.frontend_1.arn,
+          aws_instance.frontend_2.arn,
+          aws_instance.backend_1.arn,
+          aws_instance.backend_2.arn,
+          "arn:aws:ssm:ap-south-1::document/AWS-RunShellScript"
+        ]
+      },
+      {
+        Sid    = "SSMCommandStatusAndOutputs"
+        Effect = "Allow"
+        Action = [
+          "ssm:GetCommandInvocation",
+          "ssm:ListCommandInvocations",
+          "ssm:ListCommands",
+          "ssm:DescribeInstanceInformation"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+
+  tags = {
+    Name = "expense-github-actions-ssm-deployment-policy"
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "github_actions_ssm_attachment" {
+  role       = aws_iam_role.github_actions_ecr_role.name
+  policy_arn = aws_iam_policy.github_actions_ssm_policy.arn
+}
+
 

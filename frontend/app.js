@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000/api";
+const API_BASE = "/api";
 
 const form = document.getElementById("expense-form");
 const amount = document.getElementById("amount");
