@@ -35,11 +35,18 @@
         </div>
 
         <div class="infra-item">
-          <span class="infra-label">Frontend EC2 Public IPs</span>
-          <div id="frontend-ips" class="ip-list">
-            <span class="ip-pill">Loading...</span>
+          <span class="infra-label">Frontend Instance Serving This Request</span>
+          <div id="frontend-instance-info" class="serving-instance-wrap">
+            <div class="instance-row">
+              <span class="instance-label">Public IP:</span>
+              <code id="serving-ip" class="ip-pill">Loading...</code>
+            </div>
+            <div class="instance-row">
+              <span class="instance-label">Instance ID:</span>
+              <code id="serving-id" class="ip-pill muted">Loading...</code>
+            </div>
           </div>
-          <p class="infra-note">Public IPv4 addresses of active frontend EC2 instances queried dynamically via backend API.</p>
+          <p class="infra-note">Identified directly from EC2 metadata by the frontend container serving this request.</p>
         </div>
 
         <div class="infra-item infra-meta">

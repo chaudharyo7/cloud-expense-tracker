@@ -163,9 +163,13 @@ jobs:
               "docker pull \($image)",
               "docker stop expense-frontend || true",
               "docker rm expense-frontend || true",
-              "docker run -d --name expense-frontend --restart unless-stopped -p 80:80 \($image)",
+              "TOKEN=$(curl -s -f -m 3 -X PUT \"http://169.254.169.254/latest/api/token\" -H \"X-aws-ec2-metadata-token-ttl-seconds: 60\" || true)",
+              "INSTANCE_ID=$(curl -s -f -m 3 -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/instance-id || true)",
+              "PUBLIC_IP=$(curl -s -f -m 3 -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/public-ipv4 || true)",
+              "docker run -d --name expense-frontend --restart unless-stopped -p 80:80 -e EC2_INSTANCE_ID=\"$INSTANCE_ID\" -e EC2_PUBLIC_IP=\"$PUBLIC_IP\" \($image)",
               "sleep 2",
-              "curl -fail -I http://localhost:80/"
+              "curl -fail -I http://localhost:80/",
+              "curl -fail http://localhost:80/instance-info.json"
             ]}')
 
           echo "Dispatching deployment command to frontend instances via tag Role=frontend..."

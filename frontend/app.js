@@ -143,10 +143,11 @@ function escapeHtml(value) {
 checkHealth();
 loadExpenses();
 
-// --- AWS Infrastructure: ALB DNS & Frontend EC2 Public IPs ---
+// --- AWS Infrastructure: ALB DNS & Serving Frontend EC2 Instance ---
 async function loadInfrastructure() {
   const hostnameEl = document.getElementById("alb-hostname");
-  const ipsEl = document.getElementById("frontend-ips");
+  const servingIpEl = document.getElementById("serving-ip");
+  const servingIdEl = document.getElementById("serving-id");
   const lastCheckedEl = document.getElementById("infra-last-checked");
 
   const hostname = window.location.hostname || "localhost";
@@ -155,26 +156,21 @@ async function loadInfrastructure() {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/infrastructure`);
+    const response = await fetch(`/instance-info.json?_=${Date.now()}`, {
+      cache: "no-store",
+    });
     if (!response.ok) {
-      throw new Error(`API responded with status: ${response.status}`);
+      throw new Error(`HTTP status: ${response.status}`);
     }
     const data = await response.json();
-    const instances = data.frontend_instances || [];
 
-    if (ipsEl) {
-      if (instances.length > 0) {
-        ipsEl.innerHTML = instances
-          .map((inst) => {
-            const ip = inst.public_ip || "No Public IP";
-            const id = inst.instance_id ? ` (${inst.instance_id})` : "";
-            return `<span class="ip-pill">${escapeHtml(ip)}${escapeHtml(id)}</span>`;
-          })
-          .join(" ");
-      } else {
-        ipsEl.innerHTML =
-          '<span class="ip-pill warning">No active frontend instances found</span>';
-      }
+    if (servingIpEl) {
+      servingIpEl.textContent = data.public_ip || "Unavailable";
+      servingIpEl.className = "ip-pill";
+    }
+    if (servingIdEl) {
+      servingIdEl.textContent = data.instance_id || "Unavailable";
+      servingIdEl.className = "ip-pill muted";
     }
 
     if (lastCheckedEl) {
@@ -182,9 +178,13 @@ async function loadInfrastructure() {
     }
   } catch (error) {
     console.warn("Infrastructure fetch error:", error);
-    if (ipsEl) {
-      ipsEl.innerHTML =
-        '<span class="ip-pill warning">Unable to fetch EC2 Public IPs</span>';
+    if (servingIpEl) {
+      servingIpEl.textContent = "Unable to fetch";
+      servingIpEl.className = "ip-pill warning";
+    }
+    if (servingIdEl) {
+      servingIdEl.textContent = "Error";
+      servingIdEl.className = "ip-pill warning";
     }
     if (lastCheckedEl) {
       lastCheckedEl.textContent = `${new Date().toLocaleTimeString()} (failed)`;

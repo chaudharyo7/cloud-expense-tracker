@@ -250,6 +250,24 @@ th {
   border: 1px solid #e2e8f0;
 }
 
+.serving-instance-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.instance-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.instance-label {
+  font-size: 13px;
+  color: #64748b;
+  min-width: 80px;
+}
+
 .ip-list {
   display: flex;
   flex-wrap: wrap;
