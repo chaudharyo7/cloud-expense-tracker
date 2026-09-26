@@ -162,3 +162,9 @@ output "ECR_BACKEND_REPOSITORY_URL" {
   description = "URL of the backend ECR repository"
 }
 
+output "cloudwatch_dashboard_name" {
+  value       = aws_cloudwatch_dashboard.expense_dashboard.dashboard_name
+  description = "Name of the CloudWatch dashboard for Expense Tracker"
+}
+
+

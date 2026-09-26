@@ -16,11 +16,13 @@ fi
 # Fallback default values for local development
 INSTANCE_ID="${INSTANCE_ID:-local-dev}"
 PUBLIC_IP="${PUBLIC_IP:-127.0.0.1}"
+API_GATEWAY_URL="${API_GATEWAY_URL:-https://d3dpf59d6g.execute-api.ap-south-1.amazonaws.com}"
 
 cat <<EOF > /usr/share/nginx/html/instance-info.json
 {
   "instance_id": "$INSTANCE_ID",
-  "public_ip": "$PUBLIC_IP"
+  "public_ip": "$PUBLIC_IP",
+  "api_gateway_url": "$API_GATEWAY_URL"
 }
 EOF
 

@@ -164,6 +164,10 @@ async function loadInfrastructure() {
     }
     const data = await response.json();
 
+    if (data.api_gateway_url) {
+      window.REPORTS_ENDPOINT = data.api_gateway_url.replace(/\/$/, "") + "/reports";
+    }
+
     if (servingIpEl) {
       servingIpEl.textContent = data.public_ip || "Unavailable";
       servingIpEl.className = "ip-pill";
@@ -201,4 +205,70 @@ if (infraRefreshBtn) {
 
 loadInfrastructure();
 setInterval(loadInfrastructure, 30000);
+
+// --- Generate Report via AWS Lambda & S3 Pre-signed URL ---
+const reportButton = document.getElementById("report-button");
+const reportStatus = document.getElementById("report-status");
+
+if (reportButton) {
+  reportButton.addEventListener("click", async () => {
+    reportButton.disabled = true;
+    reportButton.textContent = "Generating Report...";
+
+    if (reportStatus) {
+      reportStatus.style.display = "block";
+      reportStatus.className = "report-box loading";
+      reportStatus.innerHTML =
+        "Connecting to AWS Lambda & querying PostgreSQL RDS...";
+    }
+
+    const endpoint =
+      window.REPORTS_ENDPOINT ||
+      "https://d3dpf59d6g.execute-api.ap-south-1.amazonaws.com/reports";
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || `Server responded with ${response.status}`
+        );
+      }
+
+      const data = await response.json();
+
+      if (reportStatus) {
+        reportStatus.className = "report-box success";
+        reportStatus.innerHTML = `
+          <strong>Expense Report Generated!</strong>
+          <div class="report-meta">
+            <span>Expenses: <strong>${escapeHtml(data.expense_count)}</strong></span> |
+            <span>Total: <strong>${money(data.total_amount)}</strong></span><br>
+            <span>Generated: ${new Date(data.generated_at).toLocaleString()}</span>
+          </div>
+          <a href="${escapeHtml(data.report_url)}" class="report-download-btn" target="_blank" rel="noopener noreferrer">
+            Download / View Report
+          </a>
+        `;
+      }
+    } catch (err) {
+      console.error("Report generation error:", err);
+      if (reportStatus) {
+        reportStatus.className = "report-box error";
+        reportStatus.innerHTML = `<strong>Failed to generate report:</strong> ${escapeHtml(
+          err.message || "Unknown error"
+        )}`;
+      }
+    } finally {
+      reportButton.disabled = false;
+      reportButton.textContent = "Generate Expense Report (AWS Lambda)";
+    }
+  });
+}
 

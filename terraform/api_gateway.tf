@@ -2,6 +2,13 @@ resource "aws_apigatewayv2_api" "expense_api" {
   name          = "expense-tracker-api"
   protocol_type = "HTTP"
 
+  cors_configuration {
+    allow_headers = ["content-type", "authorization"]
+    allow_methods = ["POST", "OPTIONS"]
+    allow_origins = ["*"]
+    max_age       = 3600
+  }
+
   tags = {
     Name = "expense-tracker-api"
   }

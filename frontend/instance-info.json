@@ -1,4 +1,5 @@
 {
   "instance_id": "local-dev",
-  "public_ip": "127.0.0.1"
+  "public_ip": "127.0.0.1",
+  "api_gateway_url": "https://d3dpf59d6g.execute-api.ap-south-1.amazonaws.com"
 }

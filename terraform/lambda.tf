@@ -45,23 +45,41 @@ resource "aws_iam_role_policy_attachment" "expense_lambda_s3_policy_attachment" 
   policy_arn = aws_iam_policy.lambda_s3_policy.arn
 }
 
+resource "aws_iam_role_policy_attachment" "expense_lambda_ssm_policy_attachment" {
+  role       = aws_iam_role.expense_lambda_role.name
+  policy_arn = aws_iam_policy.ec2_db_credential_read_policy.arn
+}
+
 resource "aws_lambda_function" "expense_lambda" {
   function_name = "expense-tracker-lambda"
 
   filename         = "lambda_function.zip"
   source_code_hash = filebase64sha256("lambda_function.zip")
 
-  handler = "lambda_function.lambda_handler"
-  runtime = "python3.12"
-  timeout = 30
+  handler     = "lambda_function.lambda_handler"
+  runtime     = "python3.12"
+  timeout     = 30
+  memory_size = 256
 
   depends_on = [
     aws_iam_role_policy_attachment.expense_lambda_policy_attachment,
     aws_iam_role_policy_attachment.expense_lambda_vpc_policy_attachment,
-    aws_iam_role_policy_attachment.expense_lambda_s3_policy_attachment
+    aws_iam_role_policy_attachment.expense_lambda_s3_policy_attachment,
+    aws_iam_role_policy_attachment.expense_lambda_ssm_policy_attachment
   ]
 
   role = aws_iam_role.expense_lambda_role.arn
+
+  environment {
+    variables = {
+      DB_HOST   = aws_db_instance.expense_db_instance.address
+      DB_PORT   = "5432"
+      DB_NAME   = aws_db_instance.expense_db_instance.db_name
+      DB_USER   = aws_db_instance.expense_db_instance.username
+      S3_BUCKET = aws_s3_bucket.expense_bucket.bucket
+    }
+  }
+
   vpc_config {
     subnet_ids = [
       aws_subnet.private_app_1.id,
